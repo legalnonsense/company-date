@@ -2,22 +2,22 @@
 
 (require 'ts)
 
-(defvar company-date-prefix "<<"
+(defcustom company-date-prefix "<<"
   "Prefix to invoke date completion.")
 
-(defvar company-date-termination-suffix ">"
+(defcustom company-date-termination-suffix ">>"
   "Termination suffix. If this string is found after `company-date-prefix'
 then company will not attempt to complete.")
 
-(defvar company-date-re (concat company-date-prefix
-				"[[:alnum:]]"
-				"[[:alnum:][:space:]:./-]+"
-				(when company-date-termination-suffix
-				  (concat "[^" company-date-termination-suffix "]")))
+(defconst company-date-re (concat company-date-prefix
+				  "[[:alnum:]]"
+				  "[[:alnum:][:space:]:./-]+"
+				  (when company-date-termination-suffix
+				    (concat "[^" company-date-termination-suffix "]")))
 
   "RE to trigger a completion.")
 
-(defvar company-date-processed-result nil)
+(defvar company-date--processed-result nil)
 
 (defvar company-date-bound-func #'point-at-bol
   "Function to set the bound for `looking-back'.
