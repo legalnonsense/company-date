@@ -71,23 +71,55 @@ There is undoubtedly a better candidate than `point-at-bol'.")
 			       collect (org-read-date t t r))
 		    (org-read-date t t result))))
 	 (if (listp result)
-	     (progn
-	       (org-insert-time-stamp (car date) nil nil)
-	       (insert "--")
-	       (org-insert-time-stamp (cadr date) nil nil)
-	       (insert "\n")
-	       (org-insert-time-stamp (car date) t nil)
-	       (insert "--")
-	       (org-insert-time-stamp (cadr date) t nil)
-	       (insert "\n")
-	       (org-insert-time-stamp (car date) nil t)
-	       (insert "--")
-	       (org-insert-time-stamp (cadr date) nil t)
-	       (insert "\n")
-	       (org-insert-time-stamp (car date) t t)
-	       (insert "--")
-	       (org-insert-time-stamp (cadr date) t t)
-	       (insert "\n"))
+	     (let ((date1 (company-date--buffer-mod-to-string
+			   (org-insert-time-stamp (car date) nil)))
+		   (date2 (company-date--buffer-mod-to-string
+			   (org-insert-time-stamp (cadr date) nil))))
+	       (cond ((string= date1 date2)
+		      (org-insert-time-stamp (car date) t nil)
+		      (let ((hhmm (--> (company-date--buffer-mod-to-string
+					(org-insert-time-stamp (cadr date) t))
+				       (ts-parse-org it)
+				       (concat 
+					(ts-hour it)
+					":"
+					(ts-minute it)))))
+			(backward-char 1)
+			(insert "-")
+			(insert hhmm)
+			(end-of-line)
+			(insert "\n")
+			(org-insert-time-stamp date nil t)
+			(insert "\n"))
+		      (let ((hhmm (--> (company-date--buffer-mod-to-string
+					(org-insert-time-stamp (cadr date) t t))
+				       (ts-parse-org it)
+				       (concat 
+					(ts-hour it)
+					":"
+					(ts-minute it)))))
+			(backward-char 1)
+			(insert "-")
+			(insert hhmm)
+			(end-of-line)
+			(insert "\n")))
+		     (t 
+		      (org-insert-time-stamp (car date) nil nil)
+		      (insert "--")
+		      (org-insert-time-stamp (cadr date) nil nil)
+		      (insert "\n")
+		      (org-insert-time-stamp (car date) t nil)
+		      (insert "--")
+		      (org-insert-time-stamp (cadr date) t nil)
+		      (insert "\n")
+		      (org-insert-time-stamp (car date) nil t)
+		      (insert "--")
+		      (org-insert-time-stamp (cadr date) nil t)
+		      (insert "\n")
+		      (org-insert-time-stamp (car date) t t)
+		      (insert "--")
+		      (org-insert-time-stamp (cadr date) t t)
+		      (insert "\n"))))
 	   (org-insert-time-stamp date nil nil)
 	   (insert "\n")			       
 	   (org-insert-time-stamp date t nil)
@@ -105,6 +137,13 @@ There is undoubtedly a better candidate than `point-at-bol'.")
 
 
 (provide 'company-date)
+
+
+(defmacro company-date--buffer-mod-to-string (&rest commands)
+  `(with-temp-buffer
+     ,@(cl-loop for each in commands
+		collect each)
+     (buffer-substring-no-properties (point-min) (point-max))))
 
 
 
