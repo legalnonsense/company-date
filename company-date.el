@@ -44,7 +44,7 @@ There is undoubtedly a better candidate than `point-at-bol'.")
 								   (concat 
 								    (ts-day-of-week-name (ts-adjust 'day 1 (ts-now)))
 								    " ")))))	      
-	      (setq company-date-processed-result processed-match)
+	      (setq company-date--processed-result processed-match)
 	      match))))
     (candidates
      ;; this inserts the match selected by the user. It automatically deletes the entered text,
@@ -53,9 +53,9 @@ There is undoubtedly a better candidate than `point-at-bol'.")
      (with-temp-buffer
        (let*
 	   ;; HACK: I just wanted to get it done.  It's not pretty. 
-	   ((result (if (s-contains-p " to " company-date-processed-result)
-			(s-split " to " company-date-processed-result)
-		      company-date-processed-result))
+	   ((result (if (s-contains-p " to " company-date--processed-result)
+			(s-split " to " company-date--processed-result)
+		      company-date--processed-result))
 	    (date (if (listp result)
 		      (cl-loop for r in result
 			       when (not (string-match "[^[:digit:]APMapm]" (cadr result)))
