@@ -26,27 +26,39 @@ There is undoubtedly a better candidate than `point-at-bol'.")
 (setq company-date-bound-func (lambda () (unless (< (- (point) 10) 1)
 					   (- (point) 10) 1)))
 
+(defmacro company-date--buffer-mod-to-string (&rest commands)
+  "Run COMMANDS to insert text into a temp buffer and
+return the buffer-string."
+  `(with-temp-buffer
+     ,@(cl-loop for each in commands
+		collect each)
+     (buffer-substring-no-properties (point-min) (point-max))))
+
 (defun company-date (command &optional arg &rest ignored)
   (cl-case command
     (interactive (company-begin-backend 'company-date))
     (prefix
      ;; I don't know if I have to do this, but it can't hurt
      (save-match-data 
-       (and (looking-back company-date-re (funcall company-date-bound-func))
-	    (let* ((match (match-string-no-properties 0))
-		   (processed-match (->> match
-					 (downcase)
-					 (s-chop-prefix company-date-prefix)
-					 (replace-regexp-in-string "yes\\(?:terday\\)?\\.?[[:space:]]"
-								   (concat 
-								    (ts-day-of-week-name (ts-adjust 'day -1 (ts-now)))
-								    " "))
-					 (replace-regexp-in-string "tom\\.?[[:space:]]?"
-								   (concat 
-								    (ts-day-of-week-name (ts-adjust 'day 1 (ts-now)))
-								    " ")))))	      
-	      (setq company-date--processed-result processed-match)
-	      match))))
+       (and
+	(looking-back company-date-re (funcall company-date-bound-func))
+	(let* ((match (match-string-no-properties 0))
+	       (processed-match
+		(->> match
+		     (downcase)
+		     (s-chop-prefix company-date-prefix)
+		     (replace-regexp-in-string
+		      "yes\\(?:terday\\)?\\.?[[:space:]]"
+		      (concat 
+		       (ts-day-of-week-name (ts-adjust 'day -1 (ts-now)))
+		       " "))
+		     (replace-regexp-in-string
+		      "tom\\.?[[:space:]]?"
+		      (concat 
+		       (ts-day-of-week-name (ts-adjust 'day 1 (ts-now)))
+		       " ")))))	      
+	  (setq company-date--processed-result processed-match)
+	  match))))
     (candidates
      ;; this inserts the match selected by the user. It automatically deletes the entered text,
      ;; and replaces it with the new text. 
@@ -149,15 +161,7 @@ There is undoubtedly a better candidate than `point-at-bol'.")
     (sorted t)
     (no-cache t)))
 
-
 (provide 'company-date)
-
-
-(defmacro company-date--buffer-mod-to-string (&rest commands)
-  `(with-temp-buffer
-     ,@(cl-loop for each in commands
-		collect each)
-     (buffer-substring-no-properties (point-min) (point-max))))
 
 
 
