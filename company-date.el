@@ -2,9 +2,6 @@
 
 (require 'ts)
 
-(defvar company-date-modes '(org-mode)
-  "List of major modes which will utilize `company-date'.")
-
 (defvar company-date-prefix "<<"
   "Prefix to invoke date completion.")
 
@@ -34,8 +31,7 @@ There is undoubtedly a better candidate than `point-at-bol'.")
     (prefix
      ;; I don't know if I have to do this, but it can't hurt
      (save-match-data 
-       (and (memq major-mode company-date-modes)
-	    (looking-back company-date-re (funcall company-date-bound-func))
+       (and (looking-back company-date-re (funcall company-date-bound-func))
 	    (let* ((match (match-string-no-properties 0))
 		   (processed-match (->> match
 					 (downcase)
