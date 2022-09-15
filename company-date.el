@@ -25,6 +25,7 @@ then company will not attempt to complete.")
 (defvar company-date-bound-func #'point-at-bol
   "Function to set the bound for `looking-back'.
 There is undoubtedly a better candidate than `point-at-bol'.")
+;; Maybe:
 (setq company-date-bound-func (lambda () (unless (< (- (point) 10) 1)
 					   (- (point) 10) 1)))
 
@@ -32,7 +33,6 @@ There is undoubtedly a better candidate than `point-at-bol'.")
   (cl-case command
     (interactive (company-begin-backend 'company-date))
     (prefix
-     ;; I don't know if I have to do this, but it can't hurt
      (save-match-data 
        (and (memq major-mode company-date-modes)
 	    (looking-back company-date-re (funcall company-date-bound-func))
@@ -52,32 +52,14 @@ There is undoubtedly a better candidate than `point-at-bol'.")
 								   (concat 
 								    (ts-day-of-week-name (ts-adjust 'day 1 (ts-now)))
 								    " ")))))
-	      ;; This was a way to check against dates that didn't make sense to avoid
-	      ;; default filling any text with today's date.
-	      ;; Since `org-read-date' accepts a lot more than `parse-time-string' it does
-	      ;; not make sense to use go back to parse-time-string to putting out useless completions
-	      ;; of today's date for anything following < without a space.
-	      ;; A more indicative prefix may be appropriate.
-
-	      ;; it could, however, be a test for additional test before generating the match
-	      ;; (unless (equal (parse-time-string processed-match)
-	      ;; 		  '(nil nil nil nil nil nil nil -1 nil))
-	      
-	      ;; We have to save this value because when company enters the text,
-	      ;; it will automatically delete the original buffer text and substitute the replacement.  
-	      ;; Since `processed-match' does not reflect the original buffer text, it can't be used
-	      ;; to manage the buffer text
-
 	      ;; I do not know how to avoid this without resorting to a global variable
 	      ;; (I tried returning match as a cons cell of the original and modified text,
 	      ;; but I think that company is hardwired for it to be a string.  
-	      (setq company-date-processed-result processed-match)
-	      
+	      (setq company-date-processed-result processed-match)	      
 	      match))))
     (candidates
      ;; this inserts the match selected by the user. It automatically deletes the entered text,
      ;; and replaces it with the new text. 
-
      (with-temp-buffer
        (let*
 	   ;; HACK: I just wanted to get it done.  It's not pretty. 
