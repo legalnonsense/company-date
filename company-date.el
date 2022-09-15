@@ -57,14 +57,19 @@ There is undoubtedly a better candidate than `point-at-bol'.")
 	   ((result (if (s-contains-p " to " company-date--processed-result)
 			(s-split " to " company-date--processed-result)
 		      company-date--processed-result))
-	    (date (if (listp result)
-		      (cl-loop for r in result
-			       when (not (string-match "[^[:digit:]APMapm]" (cadr result)))
-			       do (setf (cadr result) (concat (car (s-split " " (car result)))
-							      " " 
-							      (cadr result)))
-			       collect (org-read-date t t r))
-		    (org-read-date t t result))))
+	    (date
+	     (if (listp result)
+		 (cl-loop for r in result
+			  when (not
+				(string-match "[^[:digit:]APMapm]"
+					      (cadr result)))
+			  do (setf (cadr result)
+				   (concat
+				    (car (s-split " " (car result)))
+				    " " 
+				    (cadr result)))
+			  collect (org-read-date t t r))
+	       (org-read-date t t result))))
 	 (if (listp result)
 	     (progn 
 	       (let ((date1 (company-date--buffer-mod-to-string
