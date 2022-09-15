@@ -9,11 +9,12 @@
   "Termination suffix. If this string is found after `company-date-prefix'
 then company will not attempt to complete.")
 
-(defconst company-date-re (concat company-date-prefix
-				  "[[:alnum:]]"
-				  "[[:alnum:][:space:]:./-]+"
-				  (when company-date-termination-suffix
-				    (concat "[^" company-date-termination-suffix "]")))
+(defconst company-date-re
+  (concat company-date-prefix
+	  "[[:alnum:]]"
+	  "[[:alnum:][:space:]:./-]+"
+	  (when company-date-termination-suffix
+	    (concat "[^" company-date-termination-suffix "]")))
 
   "RE to trigger a completion.")
 
@@ -72,30 +73,40 @@ There is undoubtedly a better candidate than `point-at-bol'.")
 			     (org-insert-time-stamp (cadr date) nil))))
 		 (cond ((string= date1 date2)
 			(org-insert-time-stamp (car date) t nil)
-			(let ((hhmm (--> (company-date--buffer-mod-to-string
-					  (org-insert-time-stamp (cadr date) t))
-					 (ts-parse-org it)
-					 (concat
-					  (s-pad-left 2 "0"
-						      (number-to-string (ts-hour it)))
-					  ":"
-					  (s-pad-left 2 "0"
-						      (number-to-string (ts-minute it)))))))
+			(let ((hhmm
+			       (--> (company-date--buffer-mod-to-string
+				     (org-insert-time-stamp (cadr date) t))
+				    (ts-parse-org it)
+				    (concat
+				     (s-pad-left
+				      2
+				      "0"
+				      (number-to-string (ts-hour it)))
+				     ":"
+				     (s-pad-left
+				      2
+				      "0"
+				      (number-to-string (ts-minute it)))))))
 			  (backward-char 1)
 			  (insert "-")
 			  (insert hhmm)
 			  (end-of-line)
 			  (insert "\n")
 			  (org-insert-time-stamp (car date) t t)
-			  (let ((hhmm (--> (company-date--buffer-mod-to-string
-					    (org-insert-time-stamp (cadr date) t))
-					   (ts-parse-org it)
-					   (concat
-					    (s-pad-left 2 "0"
-							(number-to-string (ts-hour it)))
-					    ":"
-					    (s-pad-left 2 "0"
-							(number-to-string (ts-minute it)))))))
+			  (let ((hhmm
+				 (--> (company-date--buffer-mod-to-string
+				       (org-insert-time-stamp (cadr date) t))
+				      (ts-parse-org it)
+				      (concat
+				       (s-pad-left
+					2
+					"0"
+					(number-to-string (ts-hour it)))
+				       ":"
+				       (s-pad-left
+					2
+					"0"
+					(number-to-string (ts-minute it)))))))
 			    (backward-char 1)
 			    (insert "-")
 			    (insert hhmm)
