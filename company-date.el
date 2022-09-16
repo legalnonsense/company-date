@@ -22,10 +22,12 @@ then company will not attempt to complete.")
   "save to history"
   (setq company-date--past-dates
 	(append (list arg)
-		(if (= (length company-date--past-dates) 5)
-		    (seq-subseq company-date--past-dates
-				0 4)
-		  company-date--past-dates))))
+		(progn 
+		  (setq company-date--past-dates (remove arg company-date--past-dates))
+		  (if (> (length company-date--past-dates) 5)
+		      (seq-subseq company-date--past-dates
+				  0 4)
+		    company-date--past-dates)))))
 
 (defvar company-date--processed-result nil)
 
