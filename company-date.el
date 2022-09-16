@@ -15,8 +15,7 @@ then company will not attempt to complete.")
 (defconst company-date-re
   (rx 
    (eval company-date-prefix)
-   (+? any)
-   (not ">"))  
+   (+? (not ">")))
   "RE to trigger a completion.")
 
 (defun company-date--push-to-history (arg)
@@ -55,7 +54,7 @@ return the buffer-string."
 	 (match-string 0))))
     (candidates
      (setq xxx arg)
-     (if (string= "<<  " arg)
+     (if (string= "<< " arg)
 	 company-date--past-dates
        (time-parser--triage arg)))
     (post-completion
