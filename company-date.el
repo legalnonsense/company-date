@@ -35,14 +35,6 @@ There is undoubtedly a better candidate than `point-at-bol'.")
 (setq company-date-bound-func (lambda () (unless (< (- (point) 10) 1)
 					   (- (point) 10) 1)))
 
-(defmacro company-date--buffer-mod-to-string (&rest commands)
-  "Run COMMANDS to insert text into a temp buffer and
-return the buffer-string."
-  `(with-temp-buffer
-     ,@(cl-loop for each in commands
-		collect each)
-     (buffer-substring-no-properties (point-min) (point-max))))
-
 (defun company-date (command &optional arg &rest ignored)
   (cl-case command
     (interactive (company-begin-backend 'company-date))
