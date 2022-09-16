@@ -5,18 +5,25 @@
 (defcustom company-date-prefix "<<"
   "Prefix to invoke date completion.")
 
-(defcustom company-date-termination-suffix ">>"
+(defcustom company-date-termination-suffix ">"
   "Termination suffix. If this string is found after `company-date-prefix'
 then company will not attempt to complete.")
 
-(defconst company-date-re
-  (concat company-date-prefix
-	  "[[:alnum:]]"
-	  "[[:alnum:][:space:]:./-]+"
-	  (when company-date-termination-suffix
-	    (concat "[^" company-date-termination-suffix "]")))
+;; (defconst company-date-re
+;;   (concat company-date-prefix
+;; 	  "[[:alnum:]]"
+;; 	  "[[:alnum:][:space:]:./-+]+"
+;; 	  (when company-date-termination-suffix
+;; 	    (concat "[^" company-date-termination-suffix "]")))
+;;   "RE to trigger a completion.")
 
+(defconst company-date-re
+  (rx bol
+      (eval company-date-prefix)
+      (+? any)
+      (not ">"))  
   "RE to trigger a completion.")
+
 
 (defvar company-date--processed-result nil)
 
@@ -38,128 +45,162 @@ return the buffer-string."
   (cl-case command
     (interactive (company-begin-backend 'company-date))
     (prefix
-     ;; I don't know if I have to do this, but it can't hurt
-     (save-match-data 
-       (and
-	(looking-back company-date-re (funcall company-date-bound-func))
-	(let* ((match (match-string-no-properties 0))
-	       (processed-match
-		(->> match
-		     (downcase)
-		     (s-chop-prefix company-date-prefix)
-		     (replace-regexp-in-string
-		      "yes\\(?:terday\\)?\\.?[[:space:]]"
-		      (concat 
-		       (ts-day-of-week-name (ts-adjust 'day -1 (ts-now)))
-		       " "))
-		     (replace-regexp-in-string
-		      "tom\\.?[[:space:]]?"
-		      (concat 
-		       (ts-day-of-week-name (ts-adjust 'day 1 (ts-now)))
-		       " ")))))	      
-	  (setq company-date--processed-result processed-match)
-	  match))))
+     (save-match-data
+       (when (looking-back
+	      company-date-re
+	      (funcall company-date-bound-func))
+	 (match-string 0))))
     (candidates
-     ;; this inserts the match selected by the user. It automatically deletes the entered text,
-     ;; and replaces it with the new text. 
-
-     (with-temp-buffer
-       (let*
-	   ;; HACK: I just wanted to get it done.  It's not pretty. 
-	   ((result (if (s-contains-p " to " company-date--processed-result)
-			(s-split " to " company-date--processed-result)
-		      company-date--processed-result))
-	    (date
-	     (if (listp result)
-		 (cl-loop for r in result
-			  when (not
-				(string-match "[^[:digit:]APMapm]"
-					      (cadr result)))
-			  do (setf (cadr result)
-				   (concat
-				    (car (s-split " " (car result)))
-				    " " 
-				    (cadr result)))
-			  collect (org-read-date t t r))
-	       (org-read-date t t result))))
-	 (if (listp result)
-	     (progn 
-	       (let ((date1 (company-date--buffer-mod-to-string
-			     (org-insert-time-stamp (car date) nil)))
-		     (date2 (company-date--buffer-mod-to-string
-			     (org-insert-time-stamp (cadr date) nil))))
-		 (cond ((string= date1 date2)
-			(org-insert-time-stamp (car date) t nil)
-			(let ((hhmm
-			       (--> (company-date--buffer-mod-to-string
-				     (org-insert-time-stamp (cadr date) t))
-				    (ts-parse-org it)
-				    (concat
-				     (s-pad-left
-				      2
-				      "0"
-				      (number-to-string (ts-hour it)))
-				     ":"
-				     (s-pad-left
-				      2
-				      "0"
-				      (number-to-string (ts-minute it)))))))
-			  (backward-char 1)
-			  (insert "-")
-			  (insert hhmm)
-			  (end-of-line)
-			  (insert "\n")
-			  (org-insert-time-stamp (car date) t t)
-			  (let ((hhmm
-				 (--> (company-date--buffer-mod-to-string
-				       (org-insert-time-stamp (cadr date) t))
-				      (ts-parse-org it)
-				      (concat
-				       (s-pad-left
-					2
-					"0"
-					(number-to-string (ts-hour it)))
-				       ":"
-				       (s-pad-left
-					2
-					"0"
-					(number-to-string (ts-minute it)))))))
-			    (backward-char 1)
-			    (insert "-")
-			    (insert hhmm)
-			    (end-of-line)
-			    (insert "\n"))))
-		       (t
-			(org-insert-time-stamp (car date) nil nil)
-			(insert "--")
-			(org-insert-time-stamp (cadr date) nil nil)
-			(insert "\n")
-			(org-insert-time-stamp (car date) t nil)
-			(insert "--")
-			(org-insert-time-stamp (cadr date) t nil)
-			(insert "\n")
-			(org-insert-time-stamp (car date) nil t)
-			(insert "--")
-			(org-insert-time-stamp (cadr date) nil t)
-			(insert "\n")
-			(org-insert-time-stamp (car date) t t)
-			(insert "--")
-			(org-insert-time-stamp (cadr date) t t)
-			(insert "\n")))))
-	   (org-insert-time-stamp date nil nil)
-	   (insert "\n")			       
-	   (org-insert-time-stamp date t nil)
-	   (insert "\n")
-	   (org-insert-time-stamp date nil t)
-	   (insert "\n")
-	   (org-insert-time-stamp date t t)
-	   (insert "\n"))
-	 (split-string (buffer-string)
-		       "\n"))))
+     (time-parser--triage arg))
     (post-completion
      (insert " "))
     (sorted t)
     (no-cache t)))
+
+(defun time-parser--normalize-input (string)
+  "Find and replace:
+yesterday -> day of week name 
+tomorrow"
+  (->> string
+       (downcase)
+       (s-chop-prefix company-date-prefix)
+       (replace-regexp-in-string
+	"yes\\(?:terday\\)?\\.?[[:space:]]"
+	(concat
+	 (ts-format "%-Y-%m-%d"	;
+		    (ts-adjust 'day -1 (ts-now)))
+	 " "))
+       (replace-regexp-in-string
+	"tom\\(?:orrow\\)?\\.?[[:space:]]?"
+	(concat 
+	 (ts-day-of-week-name (ts-adjust 'day 1 (ts-now)))
+	 " "))))
+
+(defun time-parser--triage (string)
+  (setq string (time-parser--normalize-input string))
+  (cond ((s-contains-p "+" string)
+	 (time-parser--adder string))
+	((s-contains-p " to " string)
+	 (time-parser--toer string))
+	(t (time-parser--single-input string))))
+
+(defun time-parser--single-input (string)
+  "deal with not adding and not to"
+  (let ((time (org-read-date t t string))
+	(time? (time-parser--string-contains-time-p string)))
+    (s-split "\n"
+	     (time-parser--buffer-mod-to-string
+	      (org-insert-time-stamp
+	       time
+	       time?)
+	      (insert "\n")
+	      (org-insert-time-stamp
+	       time
+	       time?
+	       t)) t)))
+
+(defmacro time-parser--buffer-mod-to-string (&rest commands)
+  "Run COMMANDS to insert text into a temp buffer and
+return the buffer-string."
+  `(with-temp-buffer
+     ,@(cl-loop for each in commands
+		collect each)
+     (buffer-substring-no-properties (point-min) (point-max))))
+
+(defun time-parser--toer (string)	;
+  "Deal with to operations.  Return a list of timestamp strings."
+  (pcase-let* ((`(,from ,to) (s-split " to " string t))
+	       (to (time-parser--buffer-mod-to-string
+		    (org-insert-time-stamp 
+		     (if (string-match
+			  (rx bol
+			      (** 1 2 digit)
+			      (or (seq ":" (= 2 digit))
+				  (or "am" "pm")))
+			  to)
+			 (org-read-date t t
+					(concat (car (s-split " " from))
+						" " to)) ;
+		       (org-read-date t t to))
+		     (time-parser--string-contains-time-p to))))
+	       (from (time-parser--buffer-mod-to-string
+		      (org-insert-time-stamp 
+		       (org-read-date t t from)
+		       (time-parser--string-contains-time-p from)))))
+    (cond ((string= (substring to 0 11)
+		    (substring from 0 11)) 
+	   (let ((hhmm (progn (string-match (rx (** 1 2 digit)
+						(or (seq ":" (= 2 digit))
+						    (or "am" "pm")))
+					    to)
+			      (match-string 0 to))))
+	     (time-parser--buffer-mod-to-string 
+	      (insert from)
+	      (backward-char 1)
+	      (insert "-")
+	      (insert hhmm)
+	      (end-of-line)
+	      (let ((tt (buffer-substring (1+ (point-at-bol))  (1- (point-at-eol)))))
+		(insert "\n["
+			tt
+			"]")))))
+
+	  (t
+	   (s-split "\n"
+		    (time-parser--buffer-mod-to-string
+		     (insert from
+			     "--"
+			     to
+			     "\n"
+			     "["
+			     (substring from 1 -1)
+			     "]"
+			     "--"
+			     "["
+			     (substring to 1 -1)
+			     "]")) t)))))
+
+
+(defun time-parser--string-contains-time-p (string)
+  "is there a time specification in the string?"
+  (string-match (rx (** 1 2 digit)
+		    (or 
+		     (seq ":"
+			  (** 1 2 digit))
+		     (or "am" "pm")))
+		string))
+
+(defun time-parser--adder (string)
+  "Deal with input with a + and return a ts object"
+  (cond ((s-contains-p "+" string)
+	 (pcase-let*
+	     ((`(,date . ,adjustments) (s-split "+" string t))
+	      (date (ts-parse (car (time-parser--triage date))))
+	      (adjustments
+	       (cl-loop for adjustment in adjustments
+			for num = (--> adjustment
+				       (s-trim it)
+				       (substring it 0 -1)
+				       (string-to-number it))
+			for unit = (pcase-exhaustive (substring
+						      (s-trim adjustment)
+						      -1)
+				     ("d" 'day)
+				     ("m" 'month)
+				     ("y" 'year))
+			append (list unit num))))
+	   (s-split "\n"
+		    (time-parser--buffer-mod-to-string
+		     (org-insert-time-stamp 
+		      (org-read-date nil t 
+				     (ts-format "<%Y-%m-%d %H:%M" 
+						(apply #'ts-adjust (append adjustments (list date)))))
+		      (time-parser--string-contains-time-p string))
+		     (let ((old (buffer-substring (point-at-bol) (point-at-eol))))
+		       (insert "\n"
+			       "["
+			       (substring old 1 -1)
+			       "]"))))))))
 
 (provide 'company-date)
 
