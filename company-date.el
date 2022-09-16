@@ -9,13 +9,8 @@
   "Termination suffix. If this string is found after `company-date-prefix'
 then company will not attempt to complete.")
 
-;; (defconst company-date-re
-;;   (concat company-date-prefix
-;; 	  "[[:alnum:]]"
-;; 	  "[[:alnum:][:space:]:./-+]+"
-;; 	  (when company-date-termination-suffix
-;; 	    (concat "[^" company-date-termination-suffix "]")))
-;;   "RE to trigger a completion.")
+(defvar company-date--past-dates nil
+  "past five dates that were completed")
 
 (defconst company-date-re
   (rx 
@@ -24,6 +19,14 @@ then company will not attempt to complete.")
    (not ">"))  
   "RE to trigger a completion.")
 
+(defun company-date--push-to-history (arg)
+  "save to history"
+  (setq company-date--past-dates
+	(append (list arg)
+		(if (= (length company-date--past-dates) 5)
+		    (seq-subseq company-date--past-dates
+				0 4)
+		  company-date--past-dates))))
 
 (defvar company-date--processed-result nil)
 
@@ -51,7 +54,10 @@ return the buffer-string."
 	      (funcall company-date-bound-func))
 	 (match-string 0))))
     (candidates
-     (time-parser--triage arg))
+     (setq xxx arg)
+     (if (string= "<<  " arg)
+	 company-date--past-dates
+       (time-parser--triage arg)))
     (post-completion
      (cond ((s-starts-with-p "DEADLINE: " arg)
 	    (delete-char (* -1 (length arg)))
@@ -59,7 +65,8 @@ return the buffer-string."
 	   ((s-starts-with-p "SCHEDULED: " arg)
 	    (delete-char (* -1 (length arg)))
 	    (org-schedule nil (car (s-split "SCHEDULED: " arg t))))
-	   (t 
+	   (t
+	    (company-date--push-to-history arg)
 	    (insert " "))))
     (sorted t)
     (no-cache t)))
