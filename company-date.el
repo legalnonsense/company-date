@@ -38,6 +38,7 @@ There is undoubtedly a better candidate than `point-at-bol'.")
 					   (- (point) 10) 1)))
 
 (defun company-date (command &optional arg &rest ignored)
+  "company backend"
   (cl-case command
     (interactive (company-begin-backend 'company-date))
     (prefix
