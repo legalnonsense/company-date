@@ -57,15 +57,18 @@ the planning line, and any closing note."
 	(goto-char (plist-get (cadar section) :end))
       (point))))
 
+(defcustom company-date-history-length 5
+  "How many dates are stored in the history?")
+
 (defun company-date--push-to-history (arg)
   "save to history"
   (setq company-date--past-dates
 	(append (list arg)
 		(progn 
 		  (setq company-date--past-dates (remove arg company-date--past-dates))
-		  (if (> (length company-date--past-dates) 5)
+		  (if (> (length company-date--past-dates) company-date-history-length)
 		      (seq-subseq company-date--past-dates
-				  0 4)
+				  0 (1- company-date-history-length))
 		    company-date--past-dates)))))
 
 (defvar company-date-bound-func #'point-at-bol
