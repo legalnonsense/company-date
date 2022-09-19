@@ -18,6 +18,45 @@ then company will not attempt to complete.")
    (+? (not ">")))
   "RE to trigger a completion.")
 
+(defcustom company-date-put-date-in-headline? 'inactive
+  "active, inactive, or t or nil")
+
+(defun company-date-add-timestamp (arg)
+  "adsf"
+  (save-excursion 
+    (company-date--push-to-history arg)
+    (pcase (list (org-at-heading-p)
+		 (s-starts-with-p "<" arg)
+		 company-date-put-date-in-headline?)
+      ((or `(t t ,(or 'inactive 'nil))
+	   `(t nil ,(or 'active 'nil)))
+       (delete-char (* -1 (length arg)))
+       (company-date--goto-body-start)
+       (insert arg "\n")))))
+
+(defun company-date--goto-body-start ()
+  "Go to the start of the body of the current node,
+and return the point. The start of the body is defined as
+the point after the planning line, drawers immediately following
+the planning line, and any closing note."
+  (org-end-of-meta-data t)
+  (let ((section 
+	 (cddar
+	  (org-element--parse-elements (save-excursion (org-back-to-heading)
+						       (org-end-of-meta-data t)
+						       (point))
+				       (or (save-excursion (outline-next-heading))
+					   (point-max))
+				       'first-section nil nil nil nil))))
+    (if (and section
+	     (eq (caar section) 'plain-list)
+	     (eq (car (caddar section)) 'item)
+	     (eq (caaddr (caddar section)) 'paragraph)
+	     ;; "Closing note" appears to be hardcoded in org. 
+	     (string= (caddr (caddr (caddar section))) "CLOSING NOTE "))
+	(goto-char (plist-get (cadar section) :end))
+      (point))))
+
 (defun company-date--push-to-history (arg)
   "save to history"
   (setq company-date--past-dates
@@ -60,8 +99,8 @@ There is undoubtedly a better candidate than `point-at-bol'.")
 	    (delete-char (* -1 (length arg)))
 	    (org-schedule nil (car (s-split "SCHEDULED: " arg t))))
 	   (t
-	    (company-date--push-to-history arg)
-	    (insert " "))))
+	    (company-date-add-timestamp arg))))
+
     (sorted t)
     (no-cache t)))
 
@@ -212,7 +251,7 @@ return the buffer-string."
   (insert (concat "DEADLINE: " active-timestamp)
 	  "\n"
 	  (concat "SCHEDULED: " active-timestamp)))
-  
+
 
 (provide 'company-date)
 
