@@ -68,8 +68,6 @@ the planning line, and any closing note."
 				  0 4)
 		    company-date--past-dates)))))
 
-(defvar company-date--processed-result nil)
-
 (defvar company-date-bound-func #'point-at-bol
   "Function to set the bound for `looking-back'.
 There is undoubtedly a better candidate than `point-at-bol'.")
