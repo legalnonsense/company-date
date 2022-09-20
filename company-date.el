@@ -91,7 +91,7 @@ There is undoubtedly a better candidate than `point-at-bol'.")
      (setq xxx arg)
      (if (string= "<< " arg)
 	 company-date--past-dates
-       (time-parser--triage arg)))
+       (company-date--triage-input arg)))
     (post-completion
      (cond ((s-starts-with-p "DEADLINE: " arg)
 	    (delete-char (* -1 (length arg)))
@@ -105,7 +105,7 @@ There is undoubtedly a better candidate than `point-at-bol'.")
     (sorted t)
     (no-cache t)))
 
-(defun time-parser--normalize-input (string)
+(defun company-date--normalize-input (string)
   "Find and replace:
 yesterday -> day of week name 
 tomorrow"
@@ -124,29 +124,29 @@ tomorrow"
 	 (ts-day-of-week-name (ts-adjust 'day 1 (ts-now)))
 	 " "))))
 
-(defun time-parser--triage (string)
-  (setq string (time-parser--normalize-input string))
+(defun company-date--triage-input (string)
+  (setq string (company-date--normalize-input string))
   (cond ((s-contains-p "+" string)
-	 (time-parser--adder string))
+	 (company-date--added-time-input string))
 	((s-contains-p " to " string)
-	 (time-parser--toer string))
-	(t (time-parser--single-input string))))
+	 (company-date--date-range-input string))
+	(t (company-date--single-date-input string))))
 
-(defun time-parser--single-input (string)
+(defun company-date--single-date-input (string)
   "deal with not adding and not to"
   (let* ((time (org-read-date t t string))
-	 (time? (time-parser--string-contains-time-p string))
-	 (timestamp (time-parser--buffer-mod-to-string nil
+	 (time? (company-date--string-contains-time-p string))
+	 (timestamp (company-date--buffer-mod-to-string nil
 		      (org-insert-time-stamp time time?))))
-    (time-parser--buffer-mod-to-string t
+    (company-date--buffer-mod-to-string t
       (insert timestamp
 	      "\n")
       (org-insert-time-stamp
        time time? t)
       (insert "\n")
-      (time-parser--create-deadline-and-scheduled timestamp))))
+      (company-date--create-deadline-and-scheduled-candidates timestamp))))
 
-(defmacro time-parser--buffer-mod-to-string (separate &rest commands)
+(defmacro company-date--buffer-mod-to-string (separate &rest commands)
   "Run COMMANDS to insert text into a temp buffer and
 return the buffer-string."
   (declare (indent defun))
@@ -158,10 +158,10 @@ return the buffer-string."
 	 (s-split "\n" xxx t)
        xxx)))
 
-(defun time-parser--toer (string)	;
+(defun company-date--date-range-input (string)	;
   "Deal with to operations.  Return a list of timestamp strings."
   (pcase-let* ((`(,from ,to) (s-split " to " string t))
-	       (to (time-parser--buffer-mod-to-string nil
+	       (to (company-date--buffer-mod-to-string nil
 		     (org-insert-time-stamp 
 		      (if (string-match
 			   (rx bol
@@ -173,11 +173,11 @@ return the buffer-string."
 					 (concat (car (s-split " " from))
 						 " " to)) ;
 			(org-read-date t t to))
-		      (time-parser--string-contains-time-p to))))
-	       (from (time-parser--buffer-mod-to-string nil
+		      (company-date--string-contains-time-p to))))
+	       (from (company-date--buffer-mod-to-string nil
 		       (org-insert-time-stamp 
 			(org-read-date t t from)
-			(time-parser--string-contains-time-p from)))))
+			(company-date--string-contains-time-p from)))))
     (cond ((string= (substring to 0 11)
 		    (substring from 0 11)) 
 	   (let ((hhmm (progn (string-match (rx (** 1 2 digit)
@@ -185,7 +185,7 @@ return the buffer-string."
 						    (or "am" "pm")))
 					    to)
 			      (match-string 0 to))))
-	     (time-parser--buffer-mod-to-string t 
+	     (company-date--buffer-mod-to-string t 
 	       (insert from)
 	       (backward-char 1)
 	       (insert "-")
@@ -197,7 +197,7 @@ return the buffer-string."
 			 "]")))))
 
 	  (t
-	   (time-parser--buffer-mod-to-string t
+	   (company-date--buffer-mod-to-string t
 	     (insert from
 		     "--"
 		     to
@@ -211,7 +211,7 @@ return the buffer-string."
 		     "]"))))))
 
 
-(defun time-parser--string-contains-time-p (string)
+(defun company-date--string-contains-time-p (string)
   "is there a time specification in the string?"
   (string-match (rx (** 1 2 digit)
 		    (or 
@@ -220,12 +220,12 @@ return the buffer-string."
 		     (or "am" "pm")))
 		string))
 
-(defun time-parser--adder (string)
+(defun company-date--added-time-input (string)
   "Deal with input with a + and return a ts object"
   (cond ((s-contains-p "+" string)
 	 (pcase-let*
 	     ((`(,date . ,adjustments) (s-split "+" string t))
-	      (date (ts-parse (car (time-parser--triage date))))
+	      (date (ts-parse (car (company-date--triage-input date))))
 	      (adjustments
 	       (cl-loop for adjustment in adjustments
 			for num = (--> adjustment
@@ -239,15 +239,15 @@ return the buffer-string."
 				     ("m" 'month)
 				     ("y" 'year))
 			append (list unit num)))
-	      (timestamp (time-parser--buffer-mod-to-string nil
+	      (timestamp (company-date--buffer-mod-to-string nil
 			   (org-insert-time-stamp 
 			    (org-read-date nil t 
 					   (ts-format "<%Y-%m-%d %H:%M" 
 						      (apply #'ts-adjust (append adjustments (list date)))))
-			    (time-parser--string-contains-time-p string)))))
-	   (time-parser--triage timestamp)))))
+			    (company-date--string-contains-time-p string)))))
+	   (company-date--triage-input timestamp)))))
 
-(defun time-parser--create-deadline-and-scheduled (active-timestamp)
+(defun company-date--create-deadline-and-scheduled-candidates (active-timestamp)
   "asdf"
   (insert (concat "DEADLINE: " active-timestamp)
 	  "\n"
