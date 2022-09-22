@@ -89,7 +89,6 @@ There is undoubtedly a better candidate than `point-at-bol'.")
 	      (funcall company-date-bound-func))
 	 (match-string 0))))
     (candidates
-     (setq xxx arg)
      (if (string= (concat company-date-prefix " ") arg)
 	 company-date--past-dates
        (company-date--triage-input arg)))
