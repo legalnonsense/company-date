@@ -55,6 +55,7 @@ the planning line, and any closing note."
 	     ;; "Closing note" appears to be hardcoded in org. 
 	     (string= (caddr (caddr (caddar section))) "CLOSING NOTE "))
 	(goto-char (plist-get (cadar section) :end))
+      (when (eobp) (insert "\n"))
       (point))))
 
 (defcustom company-date-history-length 5
