@@ -30,7 +30,12 @@ timestamp."
     (cond (timep (list (ts-format
 			(concat "%A the %d"
 				(company-date--add-number-suffix (ts-day ts))
-				" at %H:%M")
+				" at "
+				(downcase 
+				 (company-date--chomp-leading-zero
+				  (company-date--chomp-minutes
+				   (ts-format "%I:%M%p" ts)))))
+
 			ts)
 		       (downcase (concat (ts-format "%m/%d/%Y at " ts)
 					 (company-date--chomp-leading-zero
