@@ -3,6 +3,7 @@
 (require 'ts)
 
 (defun company-date--add-number-suffix (num)
+  "create the suffix for a number"
   (pcase (if (numberp num) 
 	     (number-to-string num)
 	   num)
@@ -15,6 +16,8 @@
     (_ "th")))
 
 (defun company-date--create-other-time-candidates (string)
+  "add extra date completions. Accept an org active timestamp, return a list
+of extra candidates."
   (let ((timep (company-date--string-contains-time-p string))
 	(ts (ts-parse string)))
     (cond (timep (list (ts-format
@@ -22,12 +25,19 @@
 				(company-date--add-number-suffix (ts-day ts))
 				" at %H:%M")
 			ts)
-		       (downcase (ts-format "%m/%d/%Y at %I:%M%p" ts))))
+		       (downcase (ts-format "%m/%d/%Y at %I:%M%p" ts))
+		       (downcase (ts-format (concat "%A, %B %d"
+						    (company-date--add-number-suffix (ts-day ts))
+						    " at %I:%M%p")
+					    ts))))
 	  
 	  (t (list (ts-format (concat "%A the %d"
 				      (company-date--add-number-suffix (ts-day ts)))
 			      ts)
-		   (ts-format "%m/%d/%Y" ts))))))
+		   (ts-format "%m/%d/%Y" ts)
+		   (ts-format (concat "%A, %B %d"
+				      (company-date--add-number-suffix (ts-day ts)))
+			      ts))))))
 
 
 
