@@ -14,7 +14,17 @@
     ((pred (s-ends-with-p "3")) "rd")
     (_ "th")))
 
+(defun company-date--chomp-leading-zero (s)
+  "chompy"
+  (replace-regexp-in-string "^0+" "" s))
+
+(defun company-date--chomp-minutes (s)
+  "chompy"
+  (replace-regexp-in-string ":00" "" s))
+
 (defun company-date--create-other-time-candidates (string)
+  "list of other candidates generated from an active
+timestamp."
   (let ((timep (company-date--string-contains-time-p string))
 	(ts (ts-parse string)))
     (cond (timep (list (ts-format
@@ -22,12 +32,20 @@
 				(company-date--add-number-suffix (ts-day ts))
 				" at %H:%M")
 			ts)
-		       (downcase (ts-format "%m/%d/%Y at %I:%M%p" ts))))
+		       (downcase (concat (ts-format "%m/%d/%Y at " ts)
+					 (company-date--chomp-leading-zero
+					  (company-date--chomp-minutes
+					   (ts-format "%I:%M%p" ts)))))
+		       (downcase (concat (ts-format "%m/%d at " ts)
+					 (company-date--chomp-leading-zero
+					  (company-date--chomp-minutes
+					   (ts-format "%I:%M%p" ts)))))))
 	  
 	  (t (list (ts-format (concat "%A the %d"
 				      (company-date--add-number-suffix (ts-day ts)))
 			      ts)
-		   (ts-format "%m/%d/%Y" ts))))))
+		   (ts-format "%m/%d/%Y" ts)
+		   (ts-format "%m/%d" ts))))))
 
 
 
