@@ -1,0 +1,16 @@
+Use the << to trigger company completion for dates.
+
+[[./images/example 1.png]]
+
+The date parser is pretty flexible:
+
+[[./images/example 2.png]]
+
+Handles time spans:
+[[./images/example 3.png]]
+
+DEADLINE and SCHEDULED will be inserted into the appropriate location in the heading.
+
+The code is a mess but it works 95% of the time. 
+
+This only works with Company mode. 
