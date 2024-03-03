@@ -206,6 +206,7 @@ tomorrow"
 (defmacro company-date--buffer-mod-to-string (separate &rest commands)
   "Run COMMANDS to insert text into a temp buffer and
 return the buffer-string."
+  ;; I don't know why I made this a macro.
   (declare (indent defun))
   `(let ((xxx (with-temp-buffer
 		,@(cl-loop for each in commands
